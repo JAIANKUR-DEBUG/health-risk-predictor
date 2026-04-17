@@ -5,7 +5,7 @@ import os, sys
 
 # Path setup
 
-BASE = os.path.dirname(os.path.abspath(**file**))
+BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 
 from model import NeuralNetwork
