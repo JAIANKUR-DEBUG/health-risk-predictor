@@ -3,18 +3,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 
-Path setup
+# Path setup
 
 BASE = os.path.dirname(os.path.abspath(file))
 sys.path.insert(0, BASE)
 
 from model import NeuralNetwork
 
-Page config
+# Page config
 
 st.set_page_config(page_title="Health Risk Predictor", page_icon="🫀", layout="wide")
 
-Load models
+# Load models
 
 @st.cache_resource
 def load_models():
@@ -30,12 +30,12 @@ return nn_d, nn_h, scaler[0], scaler[1]
 
 nn_diabetes, nn_heart, X_min, X_max = load_models()
 
-Normalize
+# Normalize
 
 def normalize(raw):
 return (raw - X_min) / (X_max - X_min + 1e-9)
 
-Risk label
+# Risk label
 
 def risk_label(pct):
 if pct < 30:
@@ -45,12 +45,12 @@ return "MEDIUM"
 else:
 return "HIGH"
 
-UI
+# UI
 
 st.title("🫀 Health Risk Predictor")
 st.markdown("### Enter Patient Details")
 
-FORM INPUT
+# FORM INPUT
 
 with st.form("patient_form"):
 
