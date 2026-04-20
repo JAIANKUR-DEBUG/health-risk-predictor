@@ -3,16 +3,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 
-# Path setup
 BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
 
 from model import NeuralNetwork
 
-# Page config
-st.set_page_config(page_title="Health Risk Predictor", page_icon="🫀", layout="wide")
+# -----------------------------
+# PAGE CONFIG
+# -----------------------------
+st.set_page_config(page_title="Health AI", page_icon="🫀", layout="wide")
 
-# Load models
+# -----------------------------
+# LOAD MODELS
+# -----------------------------
 @st.cache_resource
 def load_models():
     scaler = np.load(os.path.join(BASE, "scaler.npy"))
@@ -27,63 +30,122 @@ def load_models():
 
 nn_diabetes, nn_heart, X_min, X_max = load_models()
 
-# Normalize
-def normalize(raw):
-    return (raw - X_min) / (X_max - X_min + 1e-9)
+# -----------------------------
+# NORMALIZATION
+# -----------------------------
+def normalize(x):
+    range_ = X_max - X_min
+    range_[range_ == 0] = 1
+    return (x - X_min) / range_
 
-# Risk label
-def risk_label(pct):
-    if pct < 30:
-        return "LOW"
-    elif pct < 70:
-        return "MEDIUM"
-    else:
-        return "HIGH"
+# -----------------------------
+# CUSTOM STYLE (COOL UI)
+# -----------------------------
+st.markdown("""
+<style>
+body { background-color: #0f172a; }
 
-# UI
-st.title("🫀 Health Risk Predictor")
-st.markdown("### Enter Patient Details")
+.card {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 15px;
+}
 
-# FORM INPUT
-with st.form("patient_form"):
+.big-text {
+    font-size: 28px;
+    font-weight: bold;
+}
 
-    col1, col2 = st.columns(2)
+.center {
+    text-align: center;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    with col1:
-        age = st.number_input("Age", 1, 120, 45)
-        bp = st.number_input("Blood Pressure (mmHg)", 50, 200, 120)
-        glucose = st.number_input("Glucose (mg/dL)", 50, 400, 100)
+# -----------------------------
+# HEADER
+# -----------------------------
+st.markdown("<h1 class='center'>🫀 Health Risk AI</h1>", unsafe_allow_html=True)
+st.markdown("<p class='center'>Smart Prediction using Neural Network</p>", unsafe_allow_html=True)
 
-    with col2:
-        cholesterol = st.number_input("Cholesterol (mg/dL)", 100, 400, 200)
-        heart_rate = st.number_input("Heart Rate (bpm)", 40, 200, 75)
+st.markdown("---")
 
-    submit = st.form_submit_button("🔬 Predict Risk")
+# -----------------------------
+# INPUT SECTION (CENTERED)
+# -----------------------------
+col1, col2, col3 = st.columns(3)
 
-# Prediction
-if submit:
-    raw = np.array([[age, bp, glucose, cholesterol, heart_rate]], dtype=float)
-    X_in = normalize(raw)
+with col1:
+    highbp = st.selectbox("High BP", ["No", "Yes"])
+    smoker = st.selectbox("Smoker", ["No", "Yes"])
 
-    d_prob = float(nn_diabetes.predict_proba(X_in)[0])
-    h_prob = float(nn_heart.predict_proba(X_in)[0])
+with col2:
+    highchol = st.selectbox("High Cholesterol", ["No", "Yes"])
+    phys = st.selectbox("Physically Active", ["No", "Yes"])
 
-    d_pct = d_prob * 100
-    h_pct = h_prob * 100
+with col3:
+    bmi = st.slider("BMI", 10.0, 50.0, 25.0)
 
-    st.subheader("Results")
+# Convert values
+highbp = 1 if highbp == "Yes" else 0
+highchol = 1 if highchol == "Yes" else 0
+smoker = 1 if smoker == "Yes" else 0
+phys = 1 if phys == "Yes" else 0
 
-    col1, col2 = st.columns(2)
+st.markdown("---")
 
-    with col1:
-        st.metric("🩸 Diabetes Risk", f"{d_pct:.2f}%", risk_label(d_pct))
+# -----------------------------
+# BUTTON CENTERED
+# -----------------------------
+center_btn = st.columns([1,2,1])[1]
+with center_btn:
+    predict = st.button("🔍 Analyze Health Risk", use_container_width=True)
 
-    with col2:
-        st.metric("❤️ Heart Disease Risk", f"{h_pct:.2f}%", risk_label(h_pct))
+# -----------------------------
+# PREDICTION
+# -----------------------------
+if predict:
+    raw = np.array([[highbp, highchol, bmi, smoker, phys]])
+    X = normalize(raw)
 
-    # Graph
+    d = float(nn_diabetes.predict_proba(X)[0]) * 100
+    h = float(nn_heart.predict_proba(X)[0]) * 100
+
+    # -------------------------
+    # RESULT CARDS
+    # -------------------------
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown(f"""
+        <div class="card">
+            <div>🩸 Diabetes Risk</div>
+            <div class="big-text">{d:.1f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c2:
+        st.markdown(f"""
+        <div class="card">
+            <div>❤️ Heart Risk</div>
+            <div class="big-text">{h:.1f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # -------------------------
+    # CHART
+    # -------------------------
     fig, ax = plt.subplots()
-    ax.bar(["Diabetes", "Heart"], [d_pct, h_pct])
-    ax.set_ylabel("Risk %")
+    ax.bar(["Diabetes", "Heart"], [d, h])
+    ax.set_title("Risk Comparison")
+    ax.set_ylabel("Probability %")
 
     st.pyplot(fig)
+
+# -----------------------------
+# FOOTER
+# -----------------------------
+st.markdown("---")
+st.markdown("<p class='center'>Built with NumPy Neural Network</p>", unsafe_allow_html=True)
